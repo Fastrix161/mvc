@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS Ordered_items(
+ID BIGINT PRIMARY KEY AUTO_INCREMENT,
+item_id BIGINT NOT NULL,
+quantity BIGINT NOT NULL,
+order_id BIGINT NOT NULL,
+FOREIGN KEY(item_id) REFERENCES Item(item_id),
+FOREIGN KEY(order_id) REFERENCES Orders(order_id)
+);
