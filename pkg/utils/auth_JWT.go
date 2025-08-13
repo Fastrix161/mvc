@@ -35,7 +35,7 @@ func VerifyToken(tokenStr string) (jwt.MapClaims, error) {
 		if t.Method != jwt.SigningMethodHS256 {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return secret, nil
+		return []byte(secret), nil
 	})
 	if err != nil {
 		return nil, err

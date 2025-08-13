@@ -134,7 +134,7 @@ func GetAllItems() ([]types.Item, error) {
 	var items []types.Item
 	for rows.Next() {
 		var i types.Item
-		err := rows.Scan(&i.ItemID, &i.Name, &i.Category, &i.Price, &i.Img)
+		err := rows.Scan(&i.ItemID, &i.Name,&i.Price, &i.Category,  &i.Img)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning %v", err)
 		}
@@ -163,7 +163,7 @@ func GetCategoryItems(category string) ([]types.Item, error) {
 	var items []types.Item
 	for rows.Next() {
 		var i types.Item
-		err := rows.Scan(&i.ItemID, &i.Name, &i.Category, &i.Price, &i.Img)
+		err := rows.Scan(&i.ItemID, &i.Name,&i.Price, &i.Category,  &i.Img)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning %v", err)
 		}
@@ -173,10 +173,10 @@ func GetCategoryItems(category string) ([]types.Item, error) {
 }
 
 func GetOrder(id int) (*types.Order, error) {
-	query := "SELECT * FROM Orders JOIN User ON Orders.user_id = User.user_id WHERE Orders.order_id = ?"
+	query := "SELECT * FROM Orders WHERE Orders.order_id = ?"
 	row := DB.QueryRow(query, id)
 	var o types.Order
-	err := row.Scan(&o.OrderID, &o.SpecificInstruction, &o.OrderStatus, &o.TableNumber, &o.UserID)
+	err := row.Scan(&o.OrderID,&o.TableNumber, &o.SpecificInstruction, &o.OrderStatus ,&o.UserID )
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("order not found")
@@ -187,7 +187,7 @@ func GetOrder(id int) (*types.Order, error) {
 }
 
 func GetOrdersForUser(id int) ([]types.Order, error) {
-	query := "SELECT * FROM Orders JOIN User ON Orders.user_id = User.user_id WHERE Orders.user_id = ?"
+	query := "SELECT * FROM Orders WHERE Orders.user_id = ?"
 	rows, err := DB.Query(query, id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting orders for id %v : %v", id, err)
@@ -196,7 +196,7 @@ func GetOrdersForUser(id int) ([]types.Order, error) {
 	var orders []types.Order
 	for rows.Next() {
 		var o types.Order
-		err := rows.Scan(&o.OrderID, &o.SpecificInstruction, &o.OrderStatus, &o.TableNumber, &o.UserID)
+		err := rows.Scan(&o.OrderID,&o.TableNumber, &o.SpecificInstruction, &o.OrderStatus ,&o.UserID )
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning %v", err)
 		}
@@ -287,22 +287,22 @@ func UpdateOrderedItems(oi types.OrderedItem) error {
 		return fmt.Errorf("error getting rows affected %v", err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("ordered item not found %v", err)
+		return fmt.Errorf("no changes to be made")
 	}
 	return nil
 }
 
-func GetOrderedItems(id int) ([]types.OrderedItem, error) {
-	query := "SELECT * FROM Ordered_items JOIN Item ON Ordered_items.item_id = Item.item_id WHERE order_id = ?"
+func GetOrderedItems(id int) ([]types.OrderedItems, error) {
+	query := "SELECT ID,Item.item_id,quantity,order_id,name,price,category FROM Ordered_items JOIN Item ON Ordered_items.item_id = Item.item_id WHERE order_id = ?"
 	rows, err := DB.Query(query, id)
 	if err != nil {
 		return nil, fmt.Errorf("error getting ordered items: %v", err)
 	}
 	defer rows.Close()
-	var ois []types.OrderedItem
+	var ois []types.OrderedItems
 	for rows.Next() {
-		var oi types.OrderedItem
-		err := rows.Scan(&oi.ID, &oi.ItemID, &oi.OrderID, &oi.Quantity)
+		var oi types.OrderedItems
+		err := rows.Scan(&oi.ID, &oi.ItemID, &oi.Quantity, &oi.OrderID,&oi.ItemName,&oi.Price,&oi.Category)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning ordered items %v", err)
 		}
@@ -405,10 +405,10 @@ func UpdatePayment(pay types.Payment)(bool,error){
 }
 
 func ItemExistsInOrder(itemId int, orderId int) (bool, error) {
-	query := "SELECT * FROM Ordered_Items WHERE order_id = ? & item_Id = ?"
+	query := "SELECT * FROM Ordered_items WHERE order_id = ? AND item_Id = ?"
 	row := DB.QueryRow(query, orderId, itemId)
 	var oi types.OrderedItem
-	err := row.Scan(&oi.ID, &oi.OrderID, &oi.ItemID, &oi.Quantity)
+	err := row.Scan(&oi.ID, &oi.OrderID,  &oi.Quantity,&oi.ItemID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil

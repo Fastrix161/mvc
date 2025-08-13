@@ -1,11 +1,13 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
-	"time"
 	"os"
+	"path/filepath"
+	"time"
+	"log"
 
 	"github.com/fastrix161/mvc/pkg/models"
 	"github.com/fastrix161/mvc/pkg/types"
@@ -14,20 +16,26 @@ import (
 )
 
 
-var store = sessions.NewCookieStore([]byte(os.Getenv("SECRET")))
-
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	// case http.MethodGet:
-	// 	RenderTemplate(w, "login.html", nil)
-	// 	return
+	case http.MethodGet:
+		tmpl := template.Must(template.ParseFiles(filepath.Join("pkg/views","login.gohtml")))
+		err:= tmpl.Execute(w,nil)
+		if err!=nil{
+			http.Error(w, err.Error(),http.StatusInternalServerError)
+		}
+		return
 
 	case http.MethodPost:
-
-		var user types.User
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-			return
+		
+secret := os.Getenv("SECRET")
+if secret == "" {
+    log.Fatal("SECRET env variable not set")
+}
+var store = sessions.NewCookieStore([]byte(secret))
+		user:=types.LoginUser{
+			Email: r.FormValue("email"),
+			Password: r.FormValue("password"),
 		}
 
 		fmt.Println("Email:", user.Email, "Password:", user.Password)
@@ -42,16 +50,21 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		check, err := utils.CheckPassword(user.Password, userDB.Password)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		if !check {
 			fmt.Println("Wrong password")
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		session, _ := store.Get(r, "session-name")
+		session, _ := store.Get(r, "session")
 		session.Values["user_id"] = userDB.UserID
-		session.Save(r, w)
-
+		err= session.Save(r, w)
+		if err!=nil{
+			fmt.Println("Failed to save session:", err)
+        http.Error(w, "Error", http.StatusInternalServerError)
+        return
+		}
 		payload := map[string]interface{}{
 			"user_id": userDB.UserID,
 			"email":   userDB.Email,
@@ -69,7 +82,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 			Expires:  time.Now().Add(3 * time.Hour),
 		})
-
+		fmt.Println("User logged in successfully")
 		switch userDB.Role {
 		case "admin":
 			http.Redirect(w, r, "/admin", http.StatusFound)
@@ -80,6 +93,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-
+		return
 	}
 }

@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -12,7 +13,7 @@ import (
 type contextKey string
 
 var userContextKey = contextKey("user")
-var store = sessions.NewCookieStore([]byte(os.Getenv("SECRET")))
+
 func setUserInContext(r *http.Request, claims jwt.MapClaims) context.Context {
 	return context.WithValue(r.Context(), userContextKey, claims)
 }
@@ -23,6 +24,10 @@ func GetUserFromContext(r *http.Request) (jwt.MapClaims, bool) {
 }
 
 func GetSession(r *http.Request) *sessions.Session {
-	session, _ := store.Get(r, "session-name")
+	var store = sessions.NewCookieStore([]byte(os.Getenv("SECRET")))
+	session, err := store.Get(r, "session")
+	if err!=nil{
+		fmt.Println(err)
+	}
 	return session
 }

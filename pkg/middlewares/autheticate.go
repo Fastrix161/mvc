@@ -49,6 +49,7 @@ func RestrictToAdmin(next http.Handler) http.Handler {
 
 	func RestrictToChef(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		
 		token, err := getToken(r)
 		if err != nil || token == "" {
 			http.Redirect(w, r, "/login", http.StatusFound)
@@ -79,7 +80,6 @@ func RestrictToAdmin(next http.Handler) http.Handler {
 			http.Redirect(w,r,"/login", http.StatusFound)
 			return
 		}
-
 		claims, err := utils.VerifyToken(token)
 		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusFound)

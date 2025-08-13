@@ -66,3 +66,11 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.WriteJSON(w,map[string]string{"message": "Order status updated"})
 }
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}

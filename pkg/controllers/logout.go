@@ -15,7 +15,7 @@ func Logout(w http.ResponseWriter, r *http.Request){
 		HttpOnly: true,
 	})
 	http.SetCookie(w, &http.Cookie{
-		Name:     "connect.sid",
+		Name:     "session",
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Unix(0, 0),

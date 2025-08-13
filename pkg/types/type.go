@@ -15,6 +15,12 @@ type SignupUser struct {
 	Password     string `json:"password"`
 }
 
+type HomePage struct {
+  ActiveCategory string
+  CategoryList   []string
+  Items          []Item
+}
+
 type User struct {
 	UserID       int    `json:"user_id"`
 	Role         string `json:"role"`
@@ -45,6 +51,19 @@ type OrderedItem struct {
 	ItemID   int `json:"item_id"`
 	Quantity int `json:"quantity"`
 	OrderID  int `json:"order_id"`
+}
+type OrderedItems struct {
+	ID       int `json:"ID"`
+	ItemID   int `json:"item_id"`
+	Quantity int `json:"quantity"`
+	OrderID  int `json:"order_id"`
+	ItemName string `json:"name"`
+	Price    float32 `json:"price"`
+	Category string  `json:"category"`
+}
+type OrderPageData struct {
+	Order        Order
+	OrderedItems []OrderedItems
 }
 
 type Payment struct {

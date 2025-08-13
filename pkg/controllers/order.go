@@ -2,7 +2,10 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/fastrix161/mvc/pkg/middlewares"
@@ -15,23 +18,38 @@ func GetOrder(w http.ResponseWriter, r *http.Request){
 	session := middlewares.GetSession(r)
 	orderID, ok := session.Values["order_id"].(int)
 	if !ok {
-		http.Error(w, `{"message":"Order not found"}`, http.StatusNotFound)
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
 		return
 	}
 	order, err := models.GetOrder(orderID)
 	if err != nil {
-		http.Error(w, "Failed to fetch order", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	orderedItems, err := models.GetOrderedItems(orderID)
 	if err != nil {
-		http.Error(w, "Failed to fetch ordered items", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	utils.WriteJSON(w, map[string]interface{}{
-		"order":        order,
-		"orderedItems": orderedItems,
-	})
+
+	data := types.OrderPageData{
+		Order:        *order,
+		OrderedItems: orderedItems,
+	}
+
+	
+	tmpl := template.Must(template.New("order").Funcs(template.FuncMap{
+		"mul": func(a float32, b int) float32 { return a * float32(b) }, 
+		"add":func(a float32, b float32) float32 { return a + b },
+	}).ParseFiles(filepath.Join("pkg/views", "order.gohtml")))
+
+	err = tmpl.Execute(w, data)
+	fmt.Println(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }
 
 func DeleteOrderItem(w http.ResponseWriter, r *http.Request) {
