@@ -21,7 +21,7 @@ func main() {
 	}
 
 	router := api.SetupRouter()
-
+	
 	server := &http.Server{
 		Addr:    ":8100",
 		Handler: router,

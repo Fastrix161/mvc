@@ -73,10 +73,10 @@ func UpdatePayment(w http.ResponseWriter, r *http.Request){
 		return
 	}
 	
-	// if !contains(types.Mode, body.Mode) {
-	// 	http.Error(w, "Invalid mode, only \"unselected\",\"Cash\",\"Card\",\"UPI\",\"Net Banking\" allowed", http.StatusBadRequest)
-	// 	return
-	// }
+	if !contains(types.Mode, body.Mode) {
+		http.Error(w, "Invalid mode, only \"unselected\",\"Cash\",\"Card\",\"UPI\",\"Net Banking\" allowed", http.StatusBadRequest)
+		return
+	}
 	
 	payId,_:= strconv.Atoi(body.PayID)
 	payDB,err := models.GetPayment(payId)

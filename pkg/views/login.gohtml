@@ -41,5 +41,59 @@
       </div>
     </form>
     <a href="/signup">New User? Signup</a>
+
+    
+{{if .ErrorMessage}}
+<div class="modal fade" id="loginErrorModal" tabindex="-1" aria-labelledby="loginErrorModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="loginErrorModalLabel">Login Failed</h5>
+      </div>
+      <div class="modal-body">
+        {{.ErrorMessage}}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.onload = function () {
+    var modal = new bootstrap.Modal(document.getElementById('loginErrorModal'));
+    modal.show();
+  }
+</script>
+{{end}}
+{{if .ShowSuccess}}
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h5 class="modal-title ">Registration Successful</h5>
+      </div>
+      <div class="modal-body">
+        You have registered successfully. Please log in.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  window.onload = function () {
+    var modal = new bootstrap.Modal(document.getElementById('successModal'));
+    modal.show();
+  }
+</script>
+{{end}}
+
+
   </body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </html>
