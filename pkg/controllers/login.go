@@ -52,6 +52,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal("SECRET env variable not set")
 		}
 		var store = sessions.NewCookieStore([]byte(secret))
+		
+		oldSession, _ := store.Get(r, "session")
+		oldSession.Options.MaxAge = -1
+		_ = oldSession.Save(r, w)
+		      
 		user := types.LoginUser{
 			Email:    r.FormValue("email"),
 			Password: r.FormValue("password"),
@@ -72,8 +77,16 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/login?error=password", http.StatusFound)
 			return
 		}
-		session, _ := store.Get(r, "session")
+
+		session, _ := store.New(r, "session")
 		session.Values["user_id"] = userDB.UserID
+		session.Options = &sessions.Options{
+    Path:     "/",
+    MaxAge:   30 * 24 * 60 * 60, // 30 days
+    HttpOnly: true,
+    Secure:   false, // change to true if on HTTPS production environment
+    SameSite: http.SameSiteLaxMode,
+}
 		err = session.Save(r, w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

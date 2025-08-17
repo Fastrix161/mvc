@@ -7,15 +7,17 @@ import (
 	"time"
 	
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
+	 "github.com/joho/godotenv"
 )
 
 var DB *sql.DB
 
 func InitDatabase() (*sql.DB, error) {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Println("Warning: .env file not found")
+	if os.Getenv("ENV") != "production" {
+		if err := godotenv.Load(".env.local"); 
+		err != nil {
+			fmt.Println("Warning: .env.local not found (non-production)")
+		}
 	}
 
 	dbHost := os.Getenv("MYSQL_HOST")
@@ -26,15 +28,16 @@ func InitDatabase() (*sql.DB, error) {
 	
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		dbUser, dbPassword, dbHost, dbPort, database)
+	fmt.Printf("Connecting to DB at %s:%s with user %s\n", dbHost, dbPort, dbUser)
 
-	DB, err = sql.Open("mysql", dsn)
+	DB, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("error opening database: %v", err)
 	}
 
-	DB.SetMaxOpenConns(25)
-	DB.SetMaxIdleConns(5)
-	DB.SetConnMaxLifetime(3 * time.Minute)
+	DB.SetMaxOpenConns(100)
+	DB.SetMaxIdleConns(100)
+	DB.SetConnMaxLifetime(10 * time.Minute)
 
 	err = DB.Ping()
 	if err != nil {

@@ -14,20 +14,23 @@ import (
 func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		renderSignupPage(w,"")
+		renderSignupPage(w, "")
 		return
 	case http.MethodPost:
-		
-	mobnum, err := strconv.Atoi(r.FormValue("mobile_number"))
-	if err!=nil{
-		renderSignupPage(w, "Mobile number should only contain digits")
-		return
-	}
-		user:=types.SignupUser{
-			Email: r.FormValue("email"),
-			Password: r.FormValue("password") ,
+		var mobnum int;
+		if r.FormValue("mobile_number") != "" {
+			var err error
+			mobnum, err = strconv.Atoi(r.FormValue("mobile_number"))
+			if err != nil || len(r.FormValue("mobile_number")) != 10 {
+				renderSignupPage(w, "Mobile number should only contain digits")
+				return
+			}
+		}
+		user := types.SignupUser{
+			Email:        r.FormValue("email"),
+			Password:     r.FormValue("password"),
 			MobileNumber: mobnum,
-			Name:  r.FormValue("name"),
+			Name:         r.FormValue("name"),
 		}
 		if user.Name == "" || user.Email == "" || user.Password == "" {
 			renderSignupPage(w, "Name, email, and password can't be empty")

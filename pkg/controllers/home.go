@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"html/template"
+	_ "log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -14,20 +15,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// func GetHome(w http.ResponseWriter, r *http.Request) {
+func GetJsonHome(w http.ResponseWriter, r *http.Request) {
 
-// 	items, err := models.GetAllItems()
-// 	if err != nil {
-// 		http.Error(w, err.Error(), http.StatusInternalServerError)
-// 		return
-// 	}
-// 	resp := map[string]interface{}{
-// 		"categoryList":   types.CategoryList,
-// 		"items":          items,
-// 		"activeCategory": "All",
-// 	}
-// 	utils.WriteJSON(w, resp)
-// }
+	items, err := models.GetAllItems()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	resp := map[string]interface{}{
+		"categoryList":   types.CategoryList,
+		"items":          items,
+		"activeCategory": "All",
+	}
+	utils.WriteJSON(w, resp)
+}
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
 
@@ -75,68 +76,106 @@ func GetCategory(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetSearchItem(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+
+	items, err := models.GetItems(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	homepagedata := types.HomePage{
+		ActiveCategory: "Search Results",
+		CategoryList:   types.CategoryList,
+		Items:          items,
+	}
+	tmpl := template.Must(template.ParseFiles(filepath.Join("pkg/views", "home.gohtml")))
+	err = tmpl.Execute(w, homepagedata)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func AddToCart(w http.ResponseWriter, r *http.Request) {
 	session := middlewares.GetSession(r)
 	userID, ok := session.Values["user_id"].(int)
 	if !ok {
-	utils.WriteJSON(w, map[string]string{
-		"error": "Not logged in",
-	})
-	w.WriteHeader(http.StatusUnauthorized)
-	return
-}
+
+		w.WriteHeader(http.StatusUnauthorized)
+		utils.WriteJSON(w, map[string]string{
+			"error": "Not logged in",
+		})
+		return
+	}
 
 	var body struct {
 		ItemID string `json:"item_id"`
-		Qnty   int `json:"qnty"`
+		Qnty   int    `json:"qnty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 
-	utils.WriteJSON(w, map[string]string{
-		"error": err.Error(),
-	})
-	w.WriteHeader(http.StatusUnauthorized)
-	return
-}
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteJSON(w, map[string]string{
+			"error": err.Error(),
+		})
+		return
+	}
 
-	quantity :=body.Qnty
+	quantity := body.Qnty
 	if quantity <= 0 {
-	utils.WriteJSON(w, map[string]string{
-		"error": "Not logged in",
-	})
-	w.WriteHeader(http.StatusUnauthorized)
-	return
-}
-	orderID, exists := session.Values["order_id"].(int)
-	_ = session.Save(r, w)
+
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteJSON(w, map[string]string{
+			"error": "Not logged in",
+		})
+		return
+	}
+	var orderID int
+	orderIDInterface, exists := session.Values["order_id"]
 	if !exists {
 		order := types.Order{
-			TableNumber:         userID % 50, //mp change this later
+			TableNumber:         (userID % 50) + 1,
 			SpecificInstruction: "",
 			OrderStatus:         "In Queue",
 			UserID:              userID,
 		}
-		orderID, err := models.AddOrder(order)
+		var err error
+		orderID, err = models.AddOrder(order)
 		if err != nil {
 			http.Error(w, "Failed to create order", http.StatusInternalServerError)
 			return
 		}
 		session.Values["order_id"] = orderID
-		session.Save(r,w)
+		session.Save(r, w)
+	} else {
+		orderID = orderIDInterface.(int)
 	}
-	itemId, _ := strconv.Atoi(body.ItemID)
+
+	itemId, err := strconv.Atoi(body.ItemID)
+	if err != nil || itemId <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteJSON(w, map[string]string{
+			"error": "Invalid item_id",
+		})
+		return
+	}
 
 	existsInOrder, err := models.ItemExistsInOrder(itemId, orderID)
 	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
 		utils.WriteJSON(w, map[string]string{
-		"error": err.Error(),
-	})
-	w.WriteHeader(http.StatusUnauthorized)
-	return
-}
+			"error": err.Error(),
+		})
+		return
+	}
 	oi := types.OrderedItem{
-		OrderID: orderID,
-		ItemID:  itemId,
+		OrderID:  orderID,
+		ItemID:   itemId,
 		Quantity: quantity,
 	}
 
@@ -146,21 +185,24 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 		_, err = models.AddOrderedItem(oi)
 	}
 	if err != nil {
+		if err.Error() == "no changes to be made" {
+        utils.WriteJSON(w, map[string]string{
+            "message": err.Error(),
+        })
+        return
+    }
+		w.WriteHeader(http.StatusUnauthorized)
 		utils.WriteJSON(w, map[string]string{
-		"error": err.Error(),
-	})
-	w.WriteHeader(http.StatusUnauthorized)
-	return
+			"error": err.Error(),
+		})
+		return
 	}
 	utils.WriteJSON(w, map[string]string{"message": "Item added to cart"})
-	 
+
 }
 
 func CheckOrder(w http.ResponseWriter, r *http.Request) {
 	session := middlewares.GetSession(r)
 	_, exists := session.Values["order_id"]
-	if !exists{
-		utils.WriteJSON(w, map[string]string{"message":"order not created"})
-	}
 	utils.WriteJSON(w, map[string]bool{"exists": exists})
 }

@@ -26,17 +26,18 @@ func SetupRouter() *mux.Router {
 	home.Use(middlewares.RestrictToLoggedIn)
 	home.HandleFunc("/addToCart", controllers.AddToCart).Methods(http.MethodPost)
 	home.HandleFunc("/checkOrder", controllers.CheckOrder).Methods(http.MethodGet)
+	home.HandleFunc("/search", controllers.GetSearchItem).Methods(http.MethodGet)
 	home.HandleFunc("", controllers.GetHome).Methods(http.MethodGet)
 	home.HandleFunc("/{category}", controllers.GetCategory).Methods(http.MethodGet)
 
 	payment := router.PathPrefix("/payment").Subrouter()
 	payment.Use(middlewares.RestrictToLoggedIn)
 	payment.HandleFunc("", controllers.GetPayment).Methods(http.MethodGet)
-	payment.HandleFunc("/update", controllers.UpdatePayment).Methods(http.MethodPost)
+	payment.HandleFunc("/update", controllers.UpdatePayment).Methods(http.MethodPut)
 
 	chef := router.PathPrefix("/chef").Subrouter()
 	chef.Use(middlewares.RestrictToChef)
-	chef.HandleFunc("/orders", controllers.GetOrders).Methods(http.MethodGet)
+	chef.HandleFunc("", controllers.GetOrders).Methods(http.MethodGet)
 	chef.HandleFunc("/change-status", controllers.ChangeStatus).Methods(http.MethodPatch)
 
 	order := router.PathPrefix("/order").Subrouter()
@@ -44,6 +45,15 @@ func SetupRouter() *mux.Router {
 	order.HandleFunc("", controllers.GetOrder).Methods(http.MethodGet)
 	order.HandleFunc("/delete-item", controllers.DeleteOrderItem).Methods(http.MethodDelete)
 	order.HandleFunc("/checkout", controllers.CheckoutOrder).Methods(http.MethodPost)
+
+	admin := router.PathPrefix("/admin").Subrouter()
+	admin.Use(middlewares.RestrictToAdmin)
+	// admin.HandleFunc("", controllers.GetAdminPage).Methods(http.MethodGet)
+
+	//api routes
+	homeAPI := router.PathPrefix("/api/home").Subrouter()
+	homeAPI.Use(middlewares.RestrictToLoggedIn)
+	homeAPI.HandleFunc("", controllers.GetJsonHome).Methods(http.MethodGet)
 
 	return router
 }

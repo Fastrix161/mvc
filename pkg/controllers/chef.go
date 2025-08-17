@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"path/filepath"
+	"html/template"
 	
 	"github.com/fastrix161/mvc/pkg/middlewares"
 	"github.com/fastrix161/mvc/pkg/models"
@@ -13,13 +15,18 @@ import (
 func GetOrders(w http.ResponseWriter, r *http.Request){
 	orders, err:= models.GetAllOrders()
 	if err!=nil{
-		http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	resp := map[string]interface{}{
-		"orders":   orders,
+	chefpagedata := types.ChefPage{
+		Orders: orders,
 	}
-	utils.WriteJSON(w,resp)
+	tmpl := template.Must(template.ParseFiles(filepath.Join("pkg/views", "chef.gohtml")))
+	err = tmpl.Execute(w, chefpagedata)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func ChangeStatus(w http.ResponseWriter, r *http.Request) {

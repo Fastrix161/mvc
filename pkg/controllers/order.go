@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"net/http"
 	"path/filepath"
@@ -31,20 +30,25 @@ func GetOrder(w http.ResponseWriter, r *http.Request){
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	var total float32
+	for _, item := range orderedItems {
+	total += item.Price * float32(item.Quantity)
+}
 
 	data := types.OrderPageData{
 		Order:        *order,
 		OrderedItems: orderedItems,
+		Total: total,
 	}
 
 	
 	tmpl := template.Must(template.New("order").Funcs(template.FuncMap{
 		"mul": func(a float32, b int) float32 { return a * float32(b) }, 
 		"add":func(a float32, b float32) float32 { return a + b },
-	}).ParseFiles(filepath.Join("pkg/views", "order.gohtml")))
+	}).ParseFiles(filepath.Join("pkg/views", "order.gohtml"),
+	filepath.Join("pkg/views/components", "payment_card.gohtml"),))
 
 	err = tmpl.Execute(w, data)
-	fmt.Println(data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -107,19 +111,31 @@ func CheckoutOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := models.GetOrder(orderID)
-	if err != nil {
-		http.Error(w, "Failed to fetch order", http.StatusInternalServerError)
+	if r.Method != http.MethodPost && r.Method != http.MethodPut {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
-	orderedItems, err := models.GetOrderedItems(orderID)
-	if err != nil {
-		http.Error(w, "Failed to fetch ordered items", http.StatusInternalServerError)
+
+	var body struct {
+		Instructions string `json:"instructions"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
-	
-	utils.WriteJSON(w, map[string]interface{}{
-		"order":        order,
-		"orderedItems": orderedItems,
-	})
+
+	order := types.Order{
+		OrderID:        orderID,
+		SpecificInstruction:   body.Instructions,
+		OrderStatus:    "In Progress",
+	}
+
+	err := models.UpdateOrder(order)
+	if err != nil {
+		http.Error(w, "Failed to update order", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(w, map[string]string{"message": "Order placed successfully"})
 }

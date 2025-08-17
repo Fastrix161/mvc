@@ -15,13 +15,18 @@ import (
 )
 
 func main() {
-	_, err := models.InitDatabase()
+	var err error
+	models.DB, err = models.InitDatabase()
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
 	router := api.SetupRouter()
 	
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request){
+		w.Write([]byte("pong"))
+	})
+
 	server := &http.Server{
 		Addr:    ":8100",
 		Handler: router,

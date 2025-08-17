@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"fmt"
-
 	"github.com/fastrix161/mvc/pkg/types"
 )
 
@@ -106,7 +105,7 @@ func GetAllUsers() ([]types.User, error) {
 }
 
 func GetItems(search string) ([]types.Item, error) {
-	query := "SELECT * FROM Item WHERE name LIKE CONCAT(?,'%')"
+	query := "SELECT * FROM Item WHERE LOWER(name) LIKE CONCAT(LOWER(?),'%')"
 	rows, err := DB.Query(query, search)
 	if err != nil {
 		return nil, fmt.Errorf("error getting items %v", err)
@@ -115,7 +114,7 @@ func GetItems(search string) ([]types.Item, error) {
 	var items []types.Item
 	for rows.Next() {
 		var i types.Item
-		err := rows.Scan(&i.ItemID, &i.Name, &i.Category, &i.Price, &i.Img)
+		err := rows.Scan(&i.ItemID, &i.Name, &i.Price, &i.Category, &i.Img)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning %v", err)
 		}
@@ -125,7 +124,7 @@ func GetItems(search string) ([]types.Item, error) {
 }
 
 func GetAllItems() ([]types.Item, error) {
-	query := "SELECT * FROM Item"
+	query := "SELECT * FROM Item ORDER BY item_id ASC"
 	rows, err := DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error getting items %v", err)
@@ -134,7 +133,7 @@ func GetAllItems() ([]types.Item, error) {
 	var items []types.Item
 	for rows.Next() {
 		var i types.Item
-		err := rows.Scan(&i.ItemID, &i.Name,&i.Price, &i.Category,  &i.Img)
+		err := rows.Scan(&i.ItemID, &i.Name, &i.Price, &i.Category, &i.Img)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning %v", err)
 		}
@@ -163,7 +162,7 @@ func GetCategoryItems(category string) ([]types.Item, error) {
 	var items []types.Item
 	for rows.Next() {
 		var i types.Item
-		err := rows.Scan(&i.ItemID, &i.Name,&i.Price, &i.Category,  &i.Img)
+		err := rows.Scan(&i.ItemID, &i.Name, &i.Price, &i.Category, &i.Img)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning %v", err)
 		}
@@ -176,7 +175,7 @@ func GetOrder(id int) (*types.Order, error) {
 	query := "SELECT * FROM Orders WHERE Orders.order_id = ?"
 	row := DB.QueryRow(query, id)
 	var o types.Order
-	err := row.Scan(&o.OrderID,&o.TableNumber, &o.SpecificInstruction, &o.OrderStatus ,&o.UserID )
+	err := row.Scan(&o.OrderID, &o.TableNumber, &o.SpecificInstruction, &o.OrderStatus, &o.UserID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("order not found")
@@ -196,7 +195,7 @@ func GetOrdersForUser(id int) ([]types.Order, error) {
 	var orders []types.Order
 	for rows.Next() {
 		var o types.Order
-		err := rows.Scan(&o.OrderID,&o.TableNumber, &o.SpecificInstruction, &o.OrderStatus ,&o.UserID )
+		err := rows.Scan(&o.OrderID, &o.TableNumber, &o.SpecificInstruction, &o.OrderStatus, &o.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning %v", err)
 		}
@@ -264,6 +263,15 @@ func UpdateOrder(order types.Order) error {
 }
 
 func AddOrderedItem(oi types.OrderedItem) (int, error) {
+	var exists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM `Orders` WHERE order_id=?)", oi.OrderID).Scan(&exists)
+	if err != nil {
+		return 0, err
+	}
+	if !exists {
+		return 0, fmt.Errorf("order_id %d does not exist", oi.OrderID)
+	}
+
 	query := "INSERT INTO Ordered_items (order_id, item_id, quantity) VALUES (?, ?, ?)"
 	result, err := DB.Exec(query, oi.OrderID, oi.ItemID, oi.Quantity)
 	if err != nil {
@@ -302,7 +310,7 @@ func GetOrderedItems(id int) ([]types.OrderedItems, error) {
 	var ois []types.OrderedItems
 	for rows.Next() {
 		var oi types.OrderedItems
-		err := rows.Scan(&oi.ID, &oi.ItemID, &oi.Quantity, &oi.OrderID,&oi.ItemName,&oi.Price,&oi.Category)
+		err := rows.Scan(&oi.ID, &oi.ItemID, &oi.Quantity, &oi.OrderID, &oi.ItemName, &oi.Price, &oi.Category)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning ordered items %v", err)
 		}
@@ -321,8 +329,8 @@ func DeleteOrderedItem(oi types.OrderedItem) error {
 }
 
 func CreatePayment(pay types.Payment) (int, error) {
-	query := "INSERT INTO payment (order_id, total, mode) VALUES (?,?,?)"
-	result, err := DB.Exec(query, pay.OrderID, pay.Total, pay.Mode)
+	query := "INSERT INTO payment (order_id, total, mode, status) VALUES (?,?,?,?)"
+	result, err := DB.Exec(query, pay.OrderID, pay.Total, pay.Mode, pay.Status)
 	if err != nil {
 		return 0, fmt.Errorf("error creating payment %v", err)
 	}
@@ -388,9 +396,9 @@ func DeletePayment(pay types.Payment) error {
 	}
 	return nil
 }
-func UpdatePayment(pay types.Payment)(bool,error){
+func UpdatePayment(pay types.Payment) (bool, error) {
 	query := "UPDATE payment SET status = ?,mode =? WHERE payment_id = ?"
-	result, err := DB.Exec(query, pay.Status, pay.Mode ,pay.PaymentID)
+	result, err := DB.Exec(query, pay.Status, pay.Mode, pay.PaymentID)
 	if err != nil {
 		return false, fmt.Errorf("error updating payment %v", err)
 	}
@@ -399,16 +407,16 @@ func UpdatePayment(pay types.Payment)(bool,error){
 		return false, fmt.Errorf("error getting rows affected %v", err)
 	}
 	if rowsAffected == 0 {
-		return false,nil
+		return false, nil
 	}
-	return true,nil
+	return true, nil
 }
 
 func ItemExistsInOrder(itemId int, orderId int) (bool, error) {
 	query := "SELECT * FROM Ordered_items WHERE order_id = ? AND item_Id = ?"
 	row := DB.QueryRow(query, orderId, itemId)
 	var oi types.OrderedItem
-	err := row.Scan(&oi.ID, &oi.OrderID,  &oi.Quantity,&oi.ItemID)
+	err := row.Scan(&oi.ID, &oi.OrderID, &oi.Quantity, &oi.ItemID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
@@ -420,9 +428,10 @@ func ItemExistsInOrder(itemId int, orderId int) (bool, error) {
 
 func GetOrderTotal(orderId int) (float32, error) {
 	query := `
-			SELECT COALESCE(SUM(oi.quantity * m.price), 0) AS total
+			SELECT COALESCE(SUM(oi.quantity * i.price), 0) AS total
 			  FROM Ordered_items oi
-			  JOIN Item m ON oi.item_id = m.id
+			  JOIN Item i
+			  ON oi.item_id = i.item_id
 			  WHERE oi.order_id = ?
 			  `
 	var total float32

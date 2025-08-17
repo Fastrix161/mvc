@@ -1,11 +1,10 @@
 package types
 
-import(
+import ()
 
-)
 type LoginUser struct {
-	Email        string `json:"email"`
-	Password     string `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type SignupUser struct {
@@ -16,9 +15,27 @@ type SignupUser struct {
 }
 
 type HomePage struct {
-  ActiveCategory string
-  CategoryList   []string
-  Items          []Item
+	ActiveCategory string
+	CategoryList   []string
+	Items          []Item
+}
+
+type AdminPage struct {
+	Users  []User
+	Orders []Order
+}
+
+type AdminUserPage struct{
+	Users 	[]User
+}
+
+type AdminOrderPage struct{
+	Orders  []Order
+}
+
+type ChefPage struct {
+	Orders []Order
+	OrderedItems  []OrderedItems
 }
 
 type User struct {
@@ -53,17 +70,18 @@ type OrderedItem struct {
 	OrderID  int `json:"order_id"`
 }
 type OrderedItems struct {
-	ID       int `json:"ID"`
-	ItemID   int `json:"item_id"`
-	Quantity int `json:"quantity"`
-	OrderID  int `json:"order_id"`
-	ItemName string `json:"name"`
+	ID       int     `json:"ID"`
+	ItemID   int     `json:"item_id"`
+	Quantity int     `json:"quantity"`
+	OrderID  int     `json:"order_id"`
+	ItemName string  `json:"name"`
 	Price    float32 `json:"price"`
 	Category string  `json:"category"`
 }
 type OrderPageData struct {
 	Order        Order
 	OrderedItems []OrderedItems
+	Total        float32
 }
 
 type Payment struct {
@@ -86,7 +104,7 @@ var OrderStatus = []string{
 	"In Progress",
 	"Completed"}
 
-var Mode=[]string{
+var Mode = []string{
 	"unselected",
 	"Cash",
 	"Card",
