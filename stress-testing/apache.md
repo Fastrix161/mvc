@@ -2,7 +2,7 @@
 ## GET Requests
 ### 1,000 concurrent users ; 100,000 requests
 
-Results from Apache Bench. The GET requests were made on `/api/home` route (to get whole menu), which implements `authorization middleware` and `database calls`.
+Results from Apache Bench. The GET requests were made on `/api/home` route (to get whole menu), which implements `database calls` to get the complete menu.
 
 ```bash
 ab -n 100000 -c 1000 -H "Cookie: token_id= <token value>" http://localhost:8100/api/home
@@ -12,6 +12,7 @@ ab -n 100000 -c 1000 -H "Cookie: token_id= <token value>" http://localhost:8100/
 ***Result:-***
 
 ```bash
+ab -n 100000 -c 1000 http://localhost:8100/api/home
 This is ApacheBench, Version 2.3 <$Revision: 1903618 $>
 Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
 Licensed to The Apache Software Foundation, http://www.apache.org/
@@ -38,42 +39,41 @@ Document Path:          /api/home
 Document Length:        1146 bytes
 
 Concurrency Level:      1000
-Time taken for tests:   5.311 seconds
+Time taken for tests:   3.138 seconds
 Complete requests:      100000
 Failed requests:        0
 Total transferred:      125600000 bytes
 HTML transferred:       114600000 bytes
-Requests per second:    18829.38 [#/sec] (mean)
-Time per request:       53.108 [ms] (mean)
-Time per request:       0.053 [ms] (mean, across all concurrent requests)
-Transfer rate:          23095.41 [Kbytes/sec] received
+Requests per second:    31871.49 [#/sec] (mean)
+Time per request:       31.376 [ms] (mean)
+Time per request:       0.031 [ms] (mean, across all concurrent requests)
+Transfer rate:          39092.38 [Kbytes/sec] received
 
 Connection Times (ms)
               min  mean[+/-sd] median   max
-Connect:        0   23   2.5     23      34
-Processing:     8   30   5.1     29      57
-Waiting:        1   22   4.7     20      42
-Total:         24   53   4.8     52      77
+Connect:        0   21   3.9     21      34
+Processing:   -30   23   5.5     23      52
+Waiting:        0   16   3.9     16      41
+Total:          0   44   5.3     44      65
 
 Percentage of the requests served within a certain time (ms)
-  50%     52
-  66%     54
-  75%     56
-  80%     57
-  90%     59
-  95%     61
-  98%     64
-  99%     66
- 100%     77 (longest request)
+  50%     44
+  66%     45
+  75%     47
+  80%     47
+  90%     48
+  95%     50
+  98%     51
+  99%     52
+ 100%     65 (longest request)
  ```
 
 ## POST Requests
 ### 1,000 concurrent users ; 10,000 requests
 
 The POST requests were made on `/home/addtocart` route, which implements `authorization middleware` and multiple `database calls`.
-
 ```bash
- ab -n 10000 -c 1000 -p postdata.json -T application/json -H "Cookie: token_id= <token value>; session= <session value after atleast one item is added to cart to create order>" http://localhost:8100/home/addToCart
+ ab -n 10000 -c 1000 -p postdata.json -T application/json -H "Cookie: token_id= <token value>; session= <session value after atleast one item is added to cart to create sessions.order_id>" http://localhost:8100/home/addToCart
 ```
 <br />
 

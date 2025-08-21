@@ -22,7 +22,7 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 			var err error
 			mobnum, err = strconv.Atoi(r.FormValue("mobile_number"))
 			if err != nil || len(r.FormValue("mobile_number")) != 10 {
-				renderSignupPage(w, "Mobile number should only contain digits")
+				renderSignupPage(w, "Mobile number should only contain 10 digits")
 				return
 			}
 		}

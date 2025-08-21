@@ -38,7 +38,7 @@ func SetupRouter() *mux.Router {
 	chef := router.PathPrefix("/chef").Subrouter()
 	chef.Use(middlewares.RestrictToChef)
 	chef.HandleFunc("", controllers.GetOrders).Methods(http.MethodGet)
-	chef.HandleFunc("/change-status", controllers.ChangeStatus).Methods(http.MethodPatch)
+	chef.HandleFunc("/changeStatus", controllers.ChangeStatus).Methods(http.MethodPost)
 
 	order := router.PathPrefix("/order").Subrouter()
 	order.Use(middlewares.RestrictToLoggedIn)
@@ -48,12 +48,19 @@ func SetupRouter() *mux.Router {
 
 	admin := router.PathPrefix("/admin").Subrouter()
 	admin.Use(middlewares.RestrictToAdmin)
-	// admin.HandleFunc("", controllers.GetAdminPage).Methods(http.MethodGet)
+	admin.HandleFunc("", controllers.GetAdminPage).Methods(http.MethodGet)
 
 	//api routes
 	homeAPI := router.PathPrefix("/api/home").Subrouter()
 	homeAPI.Use(middlewares.RestrictToLoggedIn)
 	homeAPI.HandleFunc("", controllers.GetJsonHome).Methods(http.MethodGet)
+
+	API := router.PathPrefix("/api").Subrouter()
+	API.Use(middlewares.RestrictToLoggedIn)
+	API.HandleFunc("/admin/orders", controllers.GetAllOrders).Methods("GET")
+	API.HandleFunc("/admin/users", controllers.GetAllUsers).Methods("GET")
+	API.HandleFunc("/user/update", controllers.UpdateUserRole).Methods("POST")
+	API.HandleFunc("/user/delete", controllers.DeleteUser).Methods("POST")
 
 	return router
 }

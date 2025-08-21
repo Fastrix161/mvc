@@ -28,7 +28,7 @@ func main() {
 	})
 
 	server := &http.Server{
-		Addr:    ":8100",
+		Addr:    "127.0.0.1:8100",
 		Handler: router,
 	}
 	go func() {

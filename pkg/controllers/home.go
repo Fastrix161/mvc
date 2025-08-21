@@ -1,13 +1,16 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"html/template"
 	_ "log"
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"time"
 
+	"github.com/fastrix161/mvc/pkg/cache"
 	"github.com/fastrix161/mvc/pkg/middlewares"
 	"github.com/fastrix161/mvc/pkg/models"
 	"github.com/fastrix161/mvc/pkg/types"
@@ -16,6 +19,10 @@ import (
 )
 
 func GetJsonHome(w http.ResponseWriter, r *http.Request) {
+	if cached, found := cache.Get("home_json"); found {
+		utils.WriteJSON(w, cached)
+		return
+	}
 
 	items, err := models.GetAllItems()
 	if err != nil {
@@ -27,11 +34,15 @@ func GetJsonHome(w http.ResponseWriter, r *http.Request) {
 		"items":          items,
 		"activeCategory": "All",
 	}
+	cache.Set("home_json", resp, 5*time.Minute)
 	utils.WriteJSON(w, resp)
 }
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
-
+	if cached, found := cache.Get("home_html"); found {
+		w.Write(cached.([]byte))
+		return
+	}
 	items, err := models.GetAllItems()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -43,11 +54,14 @@ func GetHome(w http.ResponseWriter, r *http.Request) {
 		Items:          items,
 	}
 	tmpl := template.Must(template.ParseFiles(filepath.Join("pkg/views", "home.gohtml")))
-	err = tmpl.Execute(w, homepagedata)
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, homepagedata)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	cache.Set("home_html", buf.Bytes(), 5*time.Minute)
+	w.Write(buf.Bytes())
 }
 
 func GetCategory(w http.ResponseWriter, r *http.Request) {
@@ -105,7 +119,6 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	session := middlewares.GetSession(r)
 	userID, ok := session.Values["user_id"].(int)
 	if !ok {
-
 		w.WriteHeader(http.StatusUnauthorized)
 		utils.WriteJSON(w, map[string]string{
 			"error": "Not logged in",
@@ -139,7 +152,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	orderIDInterface, exists := session.Values["order_id"]
 	if !exists {
 		order := types.Order{
-			TableNumber:         (userID % 50) + 1,
+			TableNumber:         (orderID % 50) +1,
 			SpecificInstruction: "",
 			OrderStatus:         "In Queue",
 			UserID:              userID,
@@ -186,11 +199,11 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		if err.Error() == "no changes to be made" {
-        utils.WriteJSON(w, map[string]string{
-            "message": err.Error(),
-        })
-        return
-    }
+			utils.WriteJSON(w, map[string]string{
+				"message": "No changes to be made",
+			})
+			return
+		}
 		w.WriteHeader(http.StatusUnauthorized)
 		utils.WriteJSON(w, map[string]string{
 			"error": err.Error(),

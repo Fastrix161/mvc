@@ -20,11 +20,6 @@ type HomePage struct {
 	Items          []Item
 }
 
-type AdminPage struct {
-	Users  []User
-	Orders []Order
-}
-
 type AdminUserPage struct{
 	Users 	[]User
 }
@@ -33,10 +28,15 @@ type AdminOrderPage struct{
 	Orders  []Order
 }
 
-type ChefPage struct {
-	Orders []Order
-	OrderedItems  []OrderedItems
+type OrderWithItems struct {
+    Order        Order
+    OrderedItems []OrderedItems
 }
+
+type ChefPage struct {
+    Orders []OrderWithItems
+}
+
 
 type User struct {
 	UserID       int    `json:"user_id"`
@@ -110,3 +110,8 @@ var Mode = []string{
 	"Card",
 	"UPI",
 	"Net Banking"}
+
+var Role =[]string{
+	"customer",
+	"admin",
+	"chef"}

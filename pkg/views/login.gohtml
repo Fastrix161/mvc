@@ -10,9 +10,21 @@
       integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
       crossorigin="anonymous"
     />
+    <style>
+      #main
+      {
+        max-width: 55rem;
+      }
+    </style>
   </head>
   <body class="container">
-    <form class="mt-5 mb-5" action="/login" method="POST">
+    
+  <h1 class="text-center mt-5">
+    Login
+  </h1>
+  <body class="container">
+  <div id="main" class="container mt-5 mb-5 border">
+    <form class="mt-3 mb-5" action="/login" method="POST">
       <div class="mb-3">
         <label for="Email" class="form-label">Email address</label>
         <input
@@ -41,6 +53,7 @@
       </div>
     </form>
     <a href="/signup">New User? Signup</a>
+    </div>
 
     
 {{if .ErrorMessage}}

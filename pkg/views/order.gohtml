@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Order Page</title>
+    <title>Urban Tadka||Order Page</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -50,7 +50,7 @@
           </thead>
           <tbody>
             {{
-              range.OrderedItems
+              range .OrderedItems
             }}
             {{ $itemTotal := mul .Price .Quantity }}
             <tr>
@@ -169,7 +169,7 @@
       console.log("Order placed:", data.message);
       showPayment();})
     .catch((err) => {
-      console.error("Checkout failed:", err);
+      console.log("Checkout failed:", err);
       alert("Failed to place order.");
     });
 }
@@ -250,6 +250,17 @@ function showPayment() {
       console.error(err);
     });
 }
+  document.addEventListener('DOMContentLoaded', () => {
+  const paidCheckbox = document.getElementById('paid');
+  const confirmBtn = document.getElementById('confirmPaymentBtn');
+
+  if (paidCheckbox && confirmBtn) {
+    confirmBtn.disabled = !paidCheckbox.checked;
+    paidCheckbox.addEventListener('change', () => {
+      confirmBtn.disabled = !paidCheckbox.checked;
+    });
+  }
+});
 
     document.addEventListener("click", function (e) {
       const overlay = document.getElementById("paymentOverlay");

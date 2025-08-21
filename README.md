@@ -35,13 +35,34 @@ Create a database in MySQL, named *restaurant*
     ```
     in terminal to delete the migrations.
 <br>
-4. **Run the server:-**<br>
+
+4. **Run the server:-** <br>
     Finally run the server/app using
     ```bash
     make run 
     ``` 
     in the Terminal.
 
+Congarts!! You are good to test the server on local.
 
+# II. Docker Setup
+1. **Configure .env.docker file:-**<br>
+Create a ```.env.docker``` file similar to the ```.env.docker.sample``` to set up docker Environmental variables.
 
-Congarts!! You are good to test the server.
+2. **Run Docker:-**<br>
+- *Create docker*<br>
+    Run docker using the using 
+    ```bash
+    make docker-up
+    ```
+    in your Terminal.
+
+- *Stop docker*<br>
+    Stop/delete docker using the using 
+    ```bash
+    make docker-down
+    ```
+    in your Terminal.
+
+And there you go!! You are good to test the server on docker.
+

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"html/template"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 	"github.com/fastrix161/mvc/pkg/utils"
 )
 
-func GetOrder(w http.ResponseWriter, r *http.Request){
+func GetOrder(w http.ResponseWriter, r *http.Request) {
 	session := middlewares.GetSession(r)
 	orderID, ok := session.Values["order_id"].(int)
 	if !ok {
@@ -32,28 +33,29 @@ func GetOrder(w http.ResponseWriter, r *http.Request){
 	}
 	var total float32
 	for _, item := range orderedItems {
-	total += item.Price * float32(item.Quantity)
-}
+		total += item.Price * float32(item.Quantity)
+	}
 
 	data := types.OrderPageData{
 		Order:        *order,
 		OrderedItems: orderedItems,
-		Total: total,
+		Total:        total,
 	}
 
-	
 	tmpl := template.Must(template.New("order").Funcs(template.FuncMap{
-		"mul": func(a float32, b int) float32 { return a * float32(b) }, 
-		"add":func(a float32, b float32) float32 { return a + b },
+		"mul": func(a float32, b int) float32 { return a * float32(b) },
+		"add": func(a float32, b float32) float32 { return a + b },
 	}).ParseFiles(filepath.Join("pkg/views", "order.gohtml"),
-	filepath.Join("pkg/views/components", "payment_card.gohtml"),))
+		filepath.Join("pkg/views/components", "payment_card.gohtml")))
 
-	err = tmpl.Execute(w, data)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		http.Error(w, "Template execution error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/html")
+	buf.WriteTo(w)
 }
 
 func DeleteOrderItem(w http.ResponseWriter, r *http.Request) {
@@ -71,18 +73,18 @@ func DeleteOrderItem(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid body", http.StatusBadRequest)
 		return
 	}
-	itemId,_:= strconv.Atoi(body.ItemID)
-oi:= types.OrderedItem{
-	OrderID :orderID,
-	ItemID: itemId ,
-}
+	itemId, _ := strconv.Atoi(body.ItemID)
+	oi := types.OrderedItem{
+		OrderID: orderID,
+		ItemID:  itemId,
+	}
 	er := models.DeleteOrderedItem(oi)
 	if er != nil {
 		http.Error(w, "Failed to delete ordered item", http.StatusInternalServerError)
 		return
 	}
 
-	orderedItems, err :=  models.GetOrderedItems(orderID)
+	orderedItems, err := models.GetOrderedItems(orderID)
 	if err != nil {
 		http.Error(w, "Failed to fetch ordered items", http.StatusInternalServerError)
 		return
@@ -126,14 +128,15 @@ func CheckoutOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order := types.Order{
-		OrderID:        orderID,
-		SpecificInstruction:   body.Instructions,
-		OrderStatus:    "In Progress",
+		OrderID:             orderID,
+		SpecificInstruction: body.Instructions,
+		OrderStatus:         "In Progress",
 	}
 
 	err := models.UpdateOrder(order)
 	if err != nil {
-		http.Error(w, "Failed to update order", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteJSON(w, map[string]string{"error": err.Error()})
 		return
 	}
 

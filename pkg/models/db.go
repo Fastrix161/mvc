@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/fastrix161/mvc/pkg/types"
 )
 
@@ -44,29 +45,27 @@ func DeleteUser(id int) error {
 	return nil
 }
 
-func SetAdmin(id int) error {
-	query := "UPDATE User SET role = ? WHERE user_id = ?"
-	_, err := DB.Exec(query, "admin", id)
+func SetUserRole(id int, role string) error {
+	var exists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM `User` WHERE user_id=?)", id).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("error making admin %v", err)
+		return err
 	}
-	return nil
-}
-
-func SetChef(id int) error {
-	query := "UPDATE User SET role = ? WHERE user_id = ?"
-	_, err := DB.Exec(query, "chef", id)
-	if err != nil {
-		return fmt.Errorf("error making chef %v", err)
+	if !exists {
+		return fmt.Errorf("user_id %d does not exist", id)
 	}
-	return nil
-}
 
-func SetCustomer(id int) error {
 	query := "UPDATE User SET role = ? WHERE user_id = ?"
-	_, err := DB.Exec(query, "customer", id)
+	result, err := DB.Exec(query, role, id)
 	if err != nil {
-		return fmt.Errorf("error making customer %v", err)
+		return fmt.Errorf("error changing role %v", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected %v", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("same role")
 	}
 	return nil
 }
@@ -86,7 +85,7 @@ func GetUser(id int) (*types.User, error) {
 }
 
 func GetAllUsers() ([]types.User, error) {
-	query := "SELECT * FROM USERS"
+	query := "SELECT * FROM User"
 	rows, err := DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users %v", err)
@@ -204,8 +203,8 @@ func GetOrdersForUser(id int) ([]types.Order, error) {
 	return orders, nil
 }
 
-func GetAllOrders() ([]types.Order, error) {
-	query := "SELECT * FROM Orders JOIN User ON Orders.user_id = User.user_id ORDER BY Orders.order_id DESC"
+func GetAllOrders2() ([]types.Order, error) {
+	query := "SELECT O.* FROM Orders O JOIN Ordered_items Oi ON O.order_id = Oi.order_id ORDER BY Orders.order_id DESC"
 	rows, err := DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error getting orders: %v", err)
@@ -215,6 +214,25 @@ func GetAllOrders() ([]types.Order, error) {
 	for rows.Next() {
 		var o types.Order
 		err := rows.Scan(&o.OrderID, &o.SpecificInstruction, &o.OrderStatus, &o.TableNumber, &o.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("error during scanning orders%v", err)
+		}
+		orders = append(orders, o)
+	}
+	return orders, nil
+}
+
+func GetAllOrders() ([]types.Order, error) {
+	query := "SELECT * FROM Orders ORDER BY Orders.order_id DESC"
+	rows, err := DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error getting orders: %v", err)
+	}
+	defer rows.Close()
+	var orders []types.Order
+	for rows.Next() {
+		var o types.Order
+		err := rows.Scan(&o.OrderID, &o.TableNumber, &o.SpecificInstruction, &o.OrderStatus, &o.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("error during scanning orders%v", err)
 		}
@@ -247,8 +265,8 @@ func DeleteOrder(id int) error {
 }
 
 func UpdateOrder(order types.Order) error {
-	query := "UPDATE Orders SET table_number = ?, specific_instruction = ?, order_status = ? WHERE order_id = ?"
-	result, err := DB.Exec(query, order.TableNumber, order.SpecificInstruction, order.OrderStatus, order.OrderID)
+	query := "UPDATE Orders SET specific_instruction = ?, order_status = ? WHERE order_id = ?"
+	result, err := DB.Exec(query, order.SpecificInstruction, order.OrderStatus, order.OrderID)
 	if err != nil {
 		return fmt.Errorf("error updating order %v", err)
 	}
@@ -257,7 +275,7 @@ func UpdateOrder(order types.Order) error {
 		return fmt.Errorf("error getting rows affected %v", err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("order not found %v", err)
+		return fmt.Errorf("order not found")
 	}
 	return nil
 }

@@ -82,9 +82,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		session.Values["user_id"] = userDB.UserID
 		session.Options = &sessions.Options{
     Path:     "/",
-    MaxAge:   30 * 24 * 60 * 60, // 30 days
+    MaxAge:   7 * 24 * 60 * 60, 
     HttpOnly: true,
-    Secure:   false, // change to true if on HTTPS production environment
+    Secure:   false, 
     SameSite: http.SameSiteLaxMode,
 }
 		err = session.Save(r, w)
