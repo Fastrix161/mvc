@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"html/template"
 	_ "log"
+	"math/rand"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -20,7 +21,7 @@ import (
 
 func GetJsonHome(w http.ResponseWriter, r *http.Request) {
 	if cached, found := cache.Get("home_json"); found {
-		utils.WriteJSON(w, cached)
+		utils.WriteJSON(w, http.StatusOK, cached)
 		return
 	}
 
@@ -35,7 +36,7 @@ func GetJsonHome(w http.ResponseWriter, r *http.Request) {
 		"activeCategory": "All",
 	}
 	cache.Set("home_json", resp, 5*time.Minute)
-	utils.WriteJSON(w, resp)
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func GetHome(w http.ResponseWriter, r *http.Request) {
@@ -119,8 +120,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	session := middlewares.GetSession(r)
 	userID, ok := session.Values["user_id"].(int)
 	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		utils.WriteJSON(w, map[string]string{
+		utils.WriteJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": "Not logged in",
 		})
 		return
@@ -131,9 +131,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 		Qnty   int    `json:"qnty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteJSON(w, map[string]string{
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
 		return
@@ -141,9 +139,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 
 	quantity := body.Qnty
 	if quantity <= 0 {
-
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteJSON(w, map[string]string{
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Not logged in",
 		})
 		return
@@ -152,7 +148,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	orderIDInterface, exists := session.Values["order_id"]
 	if !exists {
 		order := types.Order{
-			TableNumber:         (orderID % 50) +1,
+			TableNumber:         rand.Intn(50) + 1,
 			SpecificInstruction: "",
 			OrderStatus:         "In Queue",
 			UserID:              userID,
@@ -171,8 +167,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 
 	itemId, err := strconv.Atoi(body.ItemID)
 	if err != nil || itemId <= 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteJSON(w, map[string]string{
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Invalid item_id",
 		})
 		return
@@ -180,8 +175,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 
 	existsInOrder, err := models.ItemExistsInOrder(itemId, orderID)
 	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		utils.WriteJSON(w, map[string]string{
+		utils.WriteJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": err.Error(),
 		})
 		return
@@ -199,23 +193,22 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		if err.Error() == "no changes to be made" {
-			utils.WriteJSON(w, map[string]string{
+			utils.WriteJSON(w, http.StatusOK, map[string]string{
 				"message": "No changes to be made",
 			})
 			return
 		}
-		w.WriteHeader(http.StatusUnauthorized)
-		utils.WriteJSON(w, map[string]string{
+		utils.WriteJSON(w, http.StatusUnauthorized, map[string]string{
 			"error": err.Error(),
 		})
 		return
 	}
-	utils.WriteJSON(w, map[string]string{"message": "Item added to cart"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Item added to cart"})
 
 }
 
 func CheckOrder(w http.ResponseWriter, r *http.Request) {
 	session := middlewares.GetSession(r)
 	_, exists := session.Values["order_id"]
-	utils.WriteJSON(w, map[string]bool{"exists": exists})
+	utils.WriteJSON(w, http.StatusOK, map[string]bool{"exists": exists})
 }

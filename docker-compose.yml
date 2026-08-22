@@ -2,14 +2,15 @@ services:
   test-mysql-container:
     image: mysql:8.0
     container_name: test-mysql-container
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-restaurant}
+    env_file: 
+      - .env.docker
+    ports:
+      - "3307:3306"  # Changed external port to 3307
     volumes:
       - mysql-data:/var/lib/mysql
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
       start_period: 30s
       interval: 10s
       timeout: 5s
@@ -18,20 +19,15 @@ services:
   go-app:
     build:
       context: .
+      network: host
     container_name: go-app-container
     ports:
       - "8100:8100"
     depends_on:
       test-mysql-container:
         condition: service_healthy
-    environment:
-      MYSQL_HOST: ${MYSQL_HOST}
-      MYSQL_PORT: ${MYSQL_PORT}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: root
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      SECRET: ${SECRET}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    env_file: 
+      - .env.docker
 
 volumes:
   mysql-data:

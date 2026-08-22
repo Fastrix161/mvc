@@ -3,7 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"html/template"
-	_ "log"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -30,7 +30,7 @@ func GetAllOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, map[string]interface{}{
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"orders": orders,
 	})
 }
@@ -42,7 +42,7 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, map[string]interface{}{
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"users": users,
 	})
 }
@@ -72,17 +72,15 @@ func UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 
 	userId, err := strconv.Atoi(body.UserID)
 	if err != nil || userId <= 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteJSON(w, map[string]string{
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Invalid user_id",
 		})
 		return
 	}
 
-	if userId==userCall {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteJSON(w, map[string]string{
-			"error": "Security: Can not Role of self!!",
+	if userId == userCall {
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "Security: Can not change Role of self!!",
 		})
 		return
 	}
@@ -92,7 +90,7 @@ func UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	utils.WriteJSON(w, map[string]string{"message": "User role updated"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "User role updated"})
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -108,13 +106,13 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		utils.WriteJSON(w, map[string]string{"error": "Invalid request body"})
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
 	userId, err := strconv.Atoi(body.UserID)
 	if err != nil || userId <= 0 {
-		utils.WriteJSON(w, map[string]string{"error": "Invalid user_id"})
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid user_id"})
 		return
 	}
 	user, err := models.GetUser(userId)
@@ -124,16 +122,15 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user.Role == "admin" {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteJSON(w, map[string]string{"error": "Admin can't be deleted"})
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "Admin can't be deleted"})
 		return
 	}
 
 	err = models.DeleteUser(userId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		utils.WriteJSON(w, map[string]string{"error": "Failed to delete user"})
+		log.Println("TRUE DELETION ERROR:", err)
+		utils.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete user"})
 		return
 	}
-	utils.WriteJSON(w, map[string]string{"message": "User deleted successfully"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"})
 }

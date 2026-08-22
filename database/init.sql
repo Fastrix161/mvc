@@ -17,7 +17,7 @@ table_number BIGINT NOT NULL,
 specific_instruction TEXT,
 order_status VARCHAR(255) NOT NULL,
 user_id BIGINT,
-FOREIGN KEY(user_id) REFERENCES User(user_id)
+FOREIGN KEY(user_id) REFERENCES User(user_id) ON DELETE CASCADE
 ); 
 
 CREATE TABLE Item(
@@ -33,8 +33,8 @@ ID BIGINT PRIMARY KEY AUTO_INCREMENT,
 item_id BIGINT NOT NULL,
 quantity BIGINT NOT NULL,
 order_id BIGINT NOT NULL,
-FOREIGN KEY(item_id) REFERENCES Item(item_id),
-FOREIGN KEY(order_id) REFERENCES Orders(order_id)
+FOREIGN KEY(item_id) REFERENCES Item(item_id) ON DELETE CASCADE,
+FOREIGN KEY(order_id) REFERENCES Orders(order_id) ON DELETE CASCADE
 );
 
 CREATE TABLE payment(
@@ -43,7 +43,7 @@ order_id BIGINT NOT NULL,
 total FLOAT NOT NULL,
 mode VARCHAR(255) NOT NULL,
 status BOOLEAN NOT NULL,
-FOREIGN KEY(order_id) REFERENCES Orders(order_id)
+FOREIGN KEY(order_id) REFERENCES Orders(order_id) ON DELETE CASCADE
 );
 
 

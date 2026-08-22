@@ -22,13 +22,13 @@ func main() {
 	}
 
 	router := api.SetupRouter()
-	
-	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request){
+
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
 	})
 
 	server := &http.Server{
-		Addr:    "127.0.0.1:8100",
+		Addr:    ":8100",
 		Handler: router,
 	}
 	go func() {

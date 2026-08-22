@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/fastrix161/mvc/pkg/models"
 	"github.com/fastrix161/mvc/pkg/middlewares"
+	"github.com/fastrix161/mvc/pkg/models"
 	"github.com/fastrix161/mvc/pkg/types"
 	"github.com/fastrix161/mvc/pkg/utils"
 )
@@ -18,8 +18,8 @@ func GetPayment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"message":"Order not found"}`, http.StatusNotFound)
 		return
 	}
-	pay,err:=models.GetPayment(orderID)
-	if err!=nil{
+	pay, err := models.GetPayment(orderID)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -33,7 +33,7 @@ func GetPayment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		utils.WriteJSON(w, map[string]interface{}{
+		utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 			"message": "No payment created yet",
 			"total":   total,
 			"payment": nil,
@@ -41,7 +41,7 @@ func GetPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, map[string]interface{}{
+	utils.WriteJSON(w, http.StatusOK, map[string]interface{}{
 		"message": "Please proceed to payment",
 		"payment": pay,
 	})
@@ -100,7 +100,7 @@ func UpdatePayment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !ok {
-			utils.WriteJSON(w, map[string]string{"message": "Nothing to update"})
+			utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Nothing to update"})
 			return
 		}
 
@@ -137,5 +137,5 @@ func UpdatePayment(w http.ResponseWriter, r *http.Request) {
 		session.Save(r, w)
 	}
 
-	utils.WriteJSON(w, map[string]string{"message": "Payment updated successfully"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Payment updated successfully"})
 }

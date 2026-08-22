@@ -17,7 +17,7 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		renderSignupPage(w, "")
 		return
 	case http.MethodPost:
-		var mobnum int;
+		var mobnum int
 		if r.FormValue("mobile_number") != "" {
 			var err error
 			mobnum, err = strconv.Atoi(r.FormValue("mobile_number"))

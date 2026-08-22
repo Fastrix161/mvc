@@ -98,11 +98,11 @@ func DeleteOrderItem(w http.ResponseWriter, r *http.Request) {
 		}
 		delete(session.Values, "order_id")
 		session.Save(r, w)
-		utils.WriteJSON(w, map[string]string{"message": "Cart is empty, order deleted"})
+		utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Cart is empty, order deleted"})
 		return
 	}
 
-	utils.WriteJSON(w, map[string]string{"message": "Item deleted"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Item deleted"})
 }
 
 func CheckoutOrder(w http.ResponseWriter, r *http.Request) {
@@ -135,10 +135,9 @@ func CheckoutOrder(w http.ResponseWriter, r *http.Request) {
 
 	err := models.UpdateOrder(order)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		utils.WriteJSON(w, map[string]string{"error": err.Error()})
+		utils.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
 
-	utils.WriteJSON(w, map[string]string{"message": "Order placed successfully"})
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Order placed successfully"})
 }

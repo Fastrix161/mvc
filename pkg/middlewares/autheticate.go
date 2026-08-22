@@ -1,33 +1,32 @@
 package middlewares
 
-import(
-	"net/http"
+import (
 	"fmt"
+	"net/http"
 
-	
 	"github.com/fastrix161/mvc/pkg/utils"
 )
 
-func Log(next http.Handler) http.Handler{
+func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		println(r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }
 
-func getToken(r *http.Request) (string,	error){
-	cookie, err:= r.Cookie("token_id")
-	if err !=nil{
-		return "",fmt.Errorf("error getting cookie: %v",err)
+func getToken(r *http.Request) (string, error) {
+	cookie, err := r.Cookie("token_id")
+	if err != nil {
+		return "", fmt.Errorf("error getting cookie: %v", err)
 	}
 	return cookie.Value, nil
 }
 
 func RestrictToAdmin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request){
-		token,err:= getToken(r)
-		if err!= nil{
-			http.Redirect(w,r,"/login", http.StatusFound)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := getToken(r)
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 
@@ -37,19 +36,20 @@ func RestrictToAdmin(next http.Handler) http.Handler {
 			return
 		}
 
-		role,_:=claims["role"].(string)
-		if role !="admin"{
+		role, _ := claims["role"].(string)
+		if role != "admin" {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		
+
 		ctx := setUserInContext(r, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})}
+	})
+}
 
-	func RestrictToChef(next http.Handler) http.Handler {
+func RestrictToChef(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		
+
 		token, err := getToken(r)
 		if err != nil || token == "" {
 			http.Redirect(w, r, "/login", http.StatusFound)
@@ -73,11 +73,11 @@ func RestrictToAdmin(next http.Handler) http.Handler {
 	})
 }
 
-	func RestrictToLoggedIn(next http.Handler) http.Handler {
-	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request){
-		token,err:= getToken(r)
-		if err!= nil{
-			http.Redirect(w,r,"/login", http.StatusFound)
+func RestrictToLoggedIn(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := getToken(r)
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
 		claims, err := utils.VerifyToken(token)
@@ -85,16 +85,17 @@ func RestrictToAdmin(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return
 		}
-		
+
 		ctx := setUserInContext(r, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
-	})}
+	})
+}
 
-	func RestrictToNew(next http.Handler) http.Handler {
+func RestrictToNew(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, err := getToken(r)
 		if err == nil && token != "" {
-			http.Redirect(w, r, "/logout", http.StatusFound)
+			http.Redirect(w, r, "/home", http.StatusFound)
 			return
 		}
 		next.ServeHTTP(w, r)

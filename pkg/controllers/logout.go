@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func Logout(w http.ResponseWriter, r *http.Request){
+func Logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token_id",
 		Value:    "",

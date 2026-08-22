@@ -4,5 +4,5 @@ table_number BIGINT NOT NULL,
 specific_instruction TEXT,
 order_status VARCHAR(255) NOT NULL,
 user_id BIGINT,
-FOREIGN KEY(user_id) REFERENCES User(user_id)
+FOREIGN KEY(user_id) REFERENCES User(user_id) ON DELETE CASCADE
 ); 
